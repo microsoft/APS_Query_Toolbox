@@ -1,0 +1,20 @@
+﻿/*
+	======================================
+	   Create Temporary Lock Contention
+	======================================
+	THis query will temporarily create lock contention between the two queries 
+	provided. This is useful for demonstarting locking behavior or testing out 
+	queries that look at locking/blocking
+	
+	The UPDATE will be blocked behind the CROSS JOIN until query 1 finishes.
+*/
+--In session 1
+SELECT 	a.*, 
+		b.* 
+FROM AdventureWorksPDW2012.dbo.DimDate a 
+CROSS JOIN AdventureWorksPDW2012.dbo.DimDate b
+ 
+--In Session 2
+UPDATE AdventureWorksPDW2012.dbo.DimDate
+SET DateKey = 0
+WHERE DateKey = 0
