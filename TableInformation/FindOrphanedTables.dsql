@@ -1,0 +1,30 @@
+﻿/*
+	==========================
+       Find Orphaned Tables
+    ==========================
+
+    This query will return tables that have become orphaned. That is, the table exists on the compute nodes, 
+    but there is no corresponding table in the PDW metadata. This can happen if there was catastrophic failure during a 
+    drop table or similar event where it wasn't able to clean up properly. These tables do no harm, but they do use up 
+    space unneccesarily. These tables should be removed by a Microsoft Support Engineer. 
+
+    Any tables returned are orphaned. For an orphaned table, you would expect to see NULL for PDW_Object_ID and Physical_Mapping. 
+
+    Author: Nicksalc@Microsoft.com
+*/
+
+SELECT 
+    ptm.object_id        AS 'PDW_Object_ID', 
+    ptm.physical_name    AS 'PDW_Physical_Mapping', 
+    pnt.name             AS 'Node_Table_Name',
+    pnt.object_id        AS 'Node_Object_Id',
+    pn.name, 
+    pnt.pdw_node_id         AS 'PDW_Node_Name',
+    pnt.create_date
+FROM sys.pdw_table_mappings ptm
+RIGHT JOIN sys.pdw_nodes_tables pnt
+    ON ptm.physical_name = pnt.name
+JOIN sys.dm_pdw_nodes pn
+    ON pn.pdw_node_id = pnt.pdw_node_id
+WHERE ptm.physical_name IS NULL
+ORDER BY Node_table_name;

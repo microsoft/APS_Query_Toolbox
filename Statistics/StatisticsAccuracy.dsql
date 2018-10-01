@@ -1,0 +1,52 @@
+﻿/*
+ ===================================
+    Check PDW Statistics Accuracy
+ ===================================
+ This query will compare the expected rowcount stored on the control node 
+ to the actual rowcount on the compute nodes. If these numbers are not equal 
+ or close, statisitcs should be updated. 
+ -STAT_ROW_COUNT=1000 when no user statistics have been created.
+*/
+SELECT  pdwtbl.name, 
+		sum(pdwpart.rows)/max(size.distribution_id)/max(pdwpart.partition_number)/8 AS STAT_ROW_COUNT,
+		Sum(part.rows)/ max(pdwpart.partition_number)/8 AS ACTUAL_ROW_COUNT
+FROM sys.pdw_nodes_partitions part 
+JOIN sys.pdw_nodes_tables tbl 
+	ON part.object_id = tbl.object_id 
+	AND part.pdw_node_id = tbl.pdw_node_id 
+JOIN sys.pdw_distributions size 
+	ON size.pdw_node_id = tbl.pdw_node_id 
+JOIN sys.pdw_table_mappings map 
+	ON map.physical_name = tbl.name 
+JOIN sys.tables pdwtbl 
+	ON pdwtbl.object_id = map.object_id 
+JOIN sys.partitions pdwpart 
+	ON pdwpart.object_id = pdwtbl.object_id 
+JOIN sys.pdw_table_distribution_properties dist 
+	ON pdwtbl.object_id = dist.object_id 
+WHERE  dist.distribution_policy <> 3 
+-- and pdwtbl.name = 'table_name'
+GROUP  BY pdwtbl.name 
+HAVING Sum(part.rows)/ max(pdwpart.partition_number)/8 != sum(pdwpart.rows)/max(size.distribution_id)/max(pdwpart.partition_number)/8
+UNION ALL 
+SELECT	pdwtbl.name,
+		sum(pdwpart.rows) /max(pdwpart.partition_number) /(select count(type) from sys.dm_pdw_nodes where type = 'COMPUTE') AS STAT_ROW_COUNT, 
+		Sum(part.rows)/ max(pdwpart.partition_number)/(select count(type) from sys.dm_pdw_nodes where type = 'COMPUTE') AS ACTUAL_ROW_COUNT 	 
+FROM sys.pdw_nodes_partitions part 
+JOIN sys.pdw_nodes_tables tbl 
+	ON part.object_id = tbl.object_id 
+	AND part.pdw_node_id = tbl.pdw_node_id 
+JOIN sys.pdw_table_mappings map 
+	ON map.physical_name = tbl.name 
+JOIN sys.tables pdwtbl 
+	ON pdwtbl.object_id = map.object_id 
+JOIN sys.partitions pdwpart 
+	ON pdwpart.object_id = pdwtbl.object_id 
+JOIN sys.pdw_table_distribution_properties dist 
+	ON pdwtbl.object_id = dist.object_id 
+WHERE dist.distribution_policy = 3 
+-- and pdwtbl.name = 'table_name'
+GROUP  BY pdwtbl.name 
+HAVING Sum(part.rows)/ max(pdwpart.partition_number)/(select count(type) from sys.dm_pdw_nodes where type = 'COMPUTE') != 
+           sum(pdwpart.rows) /max(pdwpart.partition_number) /(select count(type) from sys.dm_pdw_nodes where type = 'COMPUTE')
+ORDER BY pdwtbl.name ; 

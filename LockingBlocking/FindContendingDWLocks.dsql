@@ -1,0 +1,14 @@
+﻿/*
+	==============================
+	   Find contending DW locks 
+	==============================
+
+	This query will find any APS locks that are not in the Granted state, then return the lock 
+	and all other current locks on that object so you can determine what the blocking lock is
+
+	Author: Nicksalc@Microsoft.com
+*/
+
+select * from sys.dm_pdw_waits
+where object_name in (select object_name from sys.dm_pdw_waits where state != 'Granted')
+order by object_name

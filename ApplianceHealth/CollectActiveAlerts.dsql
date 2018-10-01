@@ -1,0 +1,30 @@
+﻿/*
+	==============================
+	   Collect Active APS Alerts 
+	==============================
+
+	This query will return any current APS alerts that the appliance is reporting.
+	These are the same alerts you would see in the admin console. 
+*/
+
+SELECT 
+	pn.[name] as [Node Name],
+	pn.[region] as [Region],
+	pchaa.[component_instance_id] as [Component ID],
+	hcg.[group_name] as [Group],
+	phc.[component_name] as [Component],
+	pchaa.[current_value] as [Status],
+	pchaa.[create_time] as [Create Time],
+	pha.[alert_name] as [Alert]
+FROM [sys].[dm_pdw_component_health_active_alerts] pchaa
+JOIN [sys].[dm_pdw_nodes] pn
+	ON pn.[pdw_node_id] = pchaa.[pdw_node_id]
+JOIN [sys].[pdw_health_alerts] pha
+	ON pha.[alert_id] = pchaa.[alert_id]
+JOIN [sys].[pdw_health_components] AS phc
+    ON pchaa.[component_id] = phc.[component_id]
+JOIN [sys].[pdw_health_component_groups] AS hcg
+    ON phc.[group_id] = hcg.[group_id]
+ORDER BY 
+	pn.name,
+	pchaa.component_instance_id
