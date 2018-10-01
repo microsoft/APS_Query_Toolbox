@@ -1,0 +1,19 @@
+﻿﻿/*
+	==============================
+
+	   Check for rollbacks 
+
+	==============================
+
+	This query will check if there are any active rollbacks on the compute
+	nodes in the appliance. If there are active rollbacks, you want them 
+	to complete (forcibly or naturally) before restarting the software. Otherwise
+	SQL will have to recover upon startup.
+*/
+select distinct * from sys.dm_pdw_exec_requests per
+inner join sys.dm_pdw_sql_requests psr
+	ON per.request_id = psr.request_id
+inner join sys.dm_pdw_nodes_exec_requests ser 
+	ON psr.spid = ser.session_id
+	and ser.pdw_node_id = psr.pdw_node_id
+where per.status='Running' and per.session_id <> session_id()

@@ -1,0 +1,23 @@
+﻿/*
+       ====================================
+          Statistics state - All columns
+       ====================================
+       This query will return a row for each column in the database,
+       including information on whether or not there is a staistic
+       on that column and when the last updated date is. 
+*/
+SELECT 
+       sm.name AS 'Schema',
+       t.name AS 'Table_Name',
+       c.name AS 'Column',
+       s.name AS 'Statistics',
+       STATS_DATE(s.[object_id],s.[stats_id]) AS [stats_last_updated_date] 
+FROM sys.columns c
+       LEFT JOIN (SELECT * FROM sys.stats
+             WHERE user_created = 1) s
+             ON c.object_id = s.object_id
+       JOIN sys.tables t
+             ON t.object_id = c.object_id
+       JOIN sys.schemas sm
+             ON  t.[schema_id] = sm.[schema_id]
+--WHERE t.name = '<table_name>' --uncomment to run for a particular table
