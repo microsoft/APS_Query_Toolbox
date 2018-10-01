@@ -1,0 +1,21 @@
+﻿/*
+       ====================================
+          Columns without Statistics
+       ====================================
+       This query will return a row for each column in the database which does 
+       not have a user-created statistic created on it.
+*/
+SELECT 
+       sm.name as 'Schema_Name',
+       t.name as 'Table_Name',
+       c.name as 'Column_NO_Stats' 
+FROM sys.columns c
+       LEFT JOIN (select * from sys.stats
+WHERE user_created = 1) s
+             ON c.object_id = s.object_id
+       JOIN sys.tables t
+             ON t.object_id = c.object_id
+       JOIN sys.schemas sm
+             ON  t.[schema_id] = sm.[schema_id]
+WHERE s.object_id IS NULL
+--AND t.name = '<table_name>' --uncomment to run for a particular table
