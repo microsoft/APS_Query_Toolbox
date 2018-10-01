@@ -1,0 +1,17 @@
+﻿/*
+	=====================================
+	   Database Physical Name Mappings
+	=====================================
+	This query is useful if you ever have to map the logical 
+	database names in PDW to the physical names held on the compute
+	nodes. 
+	
+	WARNING: never make changes on the compute nodes directly. PDW will not be aware
+	of these changes and it will cause issues.
+*/
+SELECT a.database_id, 
+	a.name, 
+	b.physical_name 
+FROM sys.databases AS a, 
+sys.pdw_database_mappings AS b
+WHERE a.database_id = b.database_id

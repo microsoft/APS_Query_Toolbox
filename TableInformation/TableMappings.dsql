@@ -1,0 +1,22 @@
+﻿/*
+	=====================================
+	   Table Physical Name Mappings
+	=====================================
+	This query is useful if you ever have to map the logical 
+	table names in PDW to the physical names held on the compute
+	nodes. Returns logical and physical names for all tables in the 
+	current database.
+	
+	WARNING: never make changes on the compute nodes directly. PDW will not be aware
+	of these changes and it will cause issues.
+*/
+ 
+SELECT DISTINCT name
+	, tab.[object_id]
+	, create_date
+	, modify_date
+	, physical_name 
+    FROM sys.tables tab
+    JOIN sys.pdw_table_mappings ptm
+      ON tab.object_id = ptm.object_id
+-- WHERE tab.name = '<table name>' 
