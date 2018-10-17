@@ -1,0 +1,38 @@
+﻿/*
+	 =============================
+		Find Long Running Steps
+	 =============================
+	 This query will use the sys.dm_pdw_request_steps DMV to determine what the longest steps currently
+	 running on the appliance are. This is More useful than looking at longest running queries because 
+	 a query could have multiple sub-queries increasing it's runtime. Looking at a step means it is running 
+	 a specific step for that amount of time. 
+
+	 This is useful in determining the current workload on an  appliance. If you remove the status = running and 
+	 collect this in addition to the PDW engine logs, then you can get full text of the queries for optimizing
+	 long-running steps.
+
+	 Author: Nick Salch, Nicksalc@microsoft.com
+*/
+SELECT 
+       per.session_id,
+       prs.request_id,
+       pes.Login_name,
+       pes.app_name,
+       per.Start_time AS Parent_Start_Time,
+       prs.start_time AS Step_Start_Time,
+       CONVERT(decimal(30,2),CONVERT(decimal(30,2),per.total_elapsed_time)/1000/60/60) AS Parent_Elapsed_Hours,
+       CONVERT(decimal(30,2),CONVERT(decimal(30,2),prs.total_elapsed_time)/1000/60/60) AS Step_Elapsed_Hours,
+       prs.Operation_type,
+       prs.Distribution_type,
+       prs.Location_type,
+       prs.status AS Step_Status,
+       prs.Command AS Step_command,
+       per.command AS Parent_Command
+FROM sys.dm_pdw_request_steps prs
+JOIN sys.dm_pdw_exec_requests per
+       ON prs.request_id = per.request_id
+JOIN sys.dm_pdw_exec_sessions pes
+       ON PER.session_id = PES.session_id
+WHERE prs.status = 'Running'
+--AND prs.total_elapsed_time > 3600000 --only steps that took longer than an hour
+ORDER BY prs.total_elapsed_time DESC
